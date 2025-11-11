@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+}
+
+// User model
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String?
+  name          String?
+  image         String?
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  accounts      Account[]
+  sessions      Session[]
+  projects      Project[]
+  datasets      Dataset[]
+  dashboards    Dashboard[]
+  
+  @@map("users")
+}
+
+// Project model
+model Project {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  datasets    Dataset[]
+  dashboards  Dashboard[]
+  
+  @@index([userId])
+  @@map("projects")
+}
+
+// Dataset model
+model Dataset {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  sourceType  String    // 'CSV', 'EXCEL', 'JSON', 'TEXT'
+  fileName    String?
+  fileSize    Int?
+  rowCount    Int?
+  columnCount Int?
+  
+  // Data storage
+  data        Json?     // Actual data for small datasets
+  dataUrl     String?   // For S3/R2 storage later
+  
+  // Metadata
+  columns     Json?     // Column names
+  types       Json?     // Column types
+  stats       Json?     // Pre-computed statistics
+  
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId   String?
+  project     Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  visualizations Visualization[]
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@index([userId])
+  @@index([projectId])
+  @@map("datasets")
+}
+
+// Dashboard model
+model Dashboard {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  isPublic    Boolean   @default(false)
+  config      Json?
+  
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId   String?
+  project     Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  visualizations Visualization[]
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@index([userId])
+  @@index([projectId])
+  @@map("dashboards")
+}
+
+// Visualization model
+model Visualization {
+  id          String    @id @default(cuid())
+  name        String
+  type        String    // 'line', 'bar', 'pie', 'scatter'
+  config      Json      // Chart configuration
+  
+  datasetId   String
+  dataset     Dataset   @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  dashboardId String?
+  dashboard   Dashboard? @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@index([datasetId])
+  @@index([dashboardId])
+  @@map("visualizations")
+}
+
+// NextAuth v5 models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
