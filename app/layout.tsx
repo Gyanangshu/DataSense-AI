@@ -4,6 +4,7 @@ import './globals.css'
 import AuthProvider from '@/components/providers/session-provider'
 import { ThemeProvider } from '@/components/providers/theme-provider'
 import { Toaster } from 'sonner'
+import DrillDownPanel from '@/components/charts/DrillDownPanel'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -28,6 +29,7 @@ export default function RootLayout({
         >
           <AuthProvider>
             {children}
+            <DrillDownPanel />
             <Toaster richColors position="bottom-right" />
           </AuthProvider>
         </ThemeProvider>

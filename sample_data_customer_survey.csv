@@ -1,0 +1,51 @@
+Survey_ID,Age,Gender,Income_Level,Education,Employment_Status,Satisfaction_Score,NPS_Score,Purchase_Frequency,Years_Customer,Support_Calls,Open_Feedback,Product_Interest,Renewal_Likelihood,Region
+1001,25,Female,45000,Bachelor,Full-time,8,9,Monthly,2,1,Love the service but wish it was cheaper,Premium,High,Northeast
+1002,34,Male,72000,Master,Full-time,9,10,Weekly,5,0,Excellent experience every time,Enterprise,Very High,Southwest
+1003,45,Female,58000,Bachelor,Part-time,6,7,Quarterly,3,4,Customer support needs improvement,Standard,Medium,Midwest
+1004,29,Male,38000,High School,Full-time,7,8,Monthly,1,2,Good value for money,Basic,High,Southeast
+1005,52,Female,95000,PhD,Self-employed,10,10,Weekly,8,0,Cannot imagine switching to competitor,Premium,Very High,Northeast
+1006,31,Male,51000,Bachelor,Full-time,5,4,Yearly,2,6,Too many bugs in the software,Standard,Low,West
+1007,41,Female,67000,Master,Full-time,8,9,Monthly,4,1,Intuitive interface and great features,Premium,High,South
+1008,28,Male,42000,Associate,Contract,6,6,Quarterly,1,3,Pricing is confusing,Basic,Medium,Midwest
+1009,55,Female,88000,Master,Full-time,9,10,Weekly,7,0,Best decision for our business,Enterprise,Very High,Northeast
+1010,33,Male,49000,Bachelor,Full-time,7,7,Monthly,3,2,Works well most of the time,Standard,Medium,Southwest
+1011,38,Female,63000,Bachelor,Part-time,4,3,Never,1,8,Extremely disappointed with recent changes,Standard,Very Low,Southeast
+1012,26,Male,35000,Bachelor,Unemployed,8,9,Monthly,2,1,Helped me during job search,Basic,High,West
+1013,47,Female,79000,Master,Full-time,9,9,Weekly,6,0,Reliable and professional,Premium,Very High,South
+1014,30,Male,54000,Bachelor,Full-time,7,8,Quarterly,2,2,Could use more customization options,Standard,Medium,Midwest
+1015,50,Female,91000,PhD,Self-employed,10,10,Daily,9,0,Indispensable tool for my work,Enterprise,Very High,Northeast
+1016,27,Male,41000,Associate,Contract,6,5,Yearly,1,5,Too complicated for beginners,Basic,Low,Southwest
+1017,43,Female,70000,Master,Full-time,8,8,Monthly,5,1,Solid performance and uptime,Premium,High,Southeast
+1018,32,Male,48000,Bachelor,Full-time,5,5,Quarterly,2,4,Support tickets take too long,Standard,Low,West
+1019,56,Female,86000,Master,Retired,9,10,Weekly,10,0,Loyal customer for a decade,Premium,Very High,South
+1020,29,Male,44000,Bachelor,Full-time,7,7,Monthly,3,2,Good but not great,Standard,Medium,Midwest
+1021,36,Female,61000,Bachelor,Full-time,8,9,Weekly,4,1,Love the recent updates,Premium,High,Northeast
+1022,24,Male,33000,High School,Part-time,6,6,Quarterly,1,3,Affordable for students,Basic,Medium,Southwest
+1023,48,Female,77000,Master,Full-time,9,9,Weekly,7,0,Highly recommend to colleagues,Enterprise,Very High,Southeast
+1024,31,Male,52000,Bachelor,Full-time,4,2,Monthly,2,9,Constant crashes and errors,Standard,Very Low,West
+1025,53,Female,93000,PhD,Self-employed,10,10,Daily,8,0,Perfect for my consulting business,Premium,Very High,South
+1026,28,Male,39000,Associate,Contract,7,8,Quarterly,1,2,Decent for the price,Basic,High,Midwest
+1027,44,Female,68000,Master,Full-time,8,8,Monthly,5,1,Feature-rich and powerful,Premium,High,Northeast
+1028,30,Male,46000,Bachelor,Full-time,6,6,Quarterly,2,3,Mobile app needs work,Standard,Medium,Southwest
+1029,57,Female,89000,Master,Retired,9,10,Weekly,11,0,Best service in the industry,Enterprise,Very High,Southeast
+1030,26,Male,37000,Bachelor,Full-time,7,7,Monthly,2,2,Does what I need,Standard,Medium,West
+1031,39,Female,64000,Bachelor,Full-time,5,4,Yearly,3,7,Billing issues every month,Standard,Low,South
+1032,27,Male,40000,Associate,Contract,8,9,Monthly,1,1,Exceeded my expectations,Basic,High,Midwest
+1033,49,Female,81000,Master,Full-time,9,10,Weekly,6,0,Streamlined our operations,Premium,Very High,Northeast
+1034,33,Male,50000,Bachelor,Full-time,7,8,Quarterly,3,2,Solid platform overall,Standard,Medium,Southwest
+1035,51,Female,94000,PhD,Self-employed,10,10,Daily,9,0,Game changer for productivity,Enterprise,Very High,Southeast
+1036,25,Male,34000,Bachelor,Unemployed,6,5,Quarterly,1,4,Free trial was too short,Basic,Low,West
+1037,42,Female,69000,Master,Full-time,8,9,Monthly,4,1,Customer service is excellent,Premium,High,South
+1038,29,Male,43000,Bachelor,Full-time,5,5,Quarterly,2,5,UI is outdated,Standard,Low,Midwest
+1039,54,Female,87000,Master,Retired,9,10,Weekly,8,0,Worth every penny,Premium,Very High,Northeast
+1040,28,Male,41000,Associate,Contract,7,7,Monthly,1,2,Good starter option,Basic,Medium,Southwest
+1041,37,Female,62000,Bachelor,Full-time,8,8,Weekly,5,1,Integrations work seamlessly,Premium,High,Southeast
+1042,32,Male,47000,Bachelor,Full-time,6,6,Quarterly,2,3,Needs better documentation,Standard,Medium,West
+1043,55,Female,90000,Master,Full-time,10,10,Daily,10,0,Cannot work without it,Enterprise,Very High,South
+1044,26,Male,36000,High School,Part-time,7,8,Monthly,1,2,Affordable and functional,Basic,High,Midwest
+1045,46,Female,75000,Master,Full-time,9,9,Weekly,6,0,Professional and reliable,Premium,Very High,Northeast
+1046,31,Male,51000,Bachelor,Full-time,4,3,Yearly,2,8,Frequent outages,Standard,Very Low,Southwest
+1047,52,Female,92000,PhD,Self-employed,10,10,Daily,7,0,Superior to all alternatives,Enterprise,Very High,Southeast
+1048,29,Male,44000,Bachelor,Full-time,7,8,Quarterly,2,2,Decent features,Standard,Medium,West
+1049,40,Female,66000,Bachelor,Full-time,8,9,Monthly,4,1,Happy with the service,Premium,High,South
+1050,27,Male,38000,Associate,Contract,6,6,Quarterly,1,3,Average experience,Basic,Medium,Midwest

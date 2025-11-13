@@ -14,6 +14,7 @@ import {
 import { BaseChart, CHART_COLORS, ChartTheme } from './BaseChart'
 import { formatNumber } from '@/lib/utils'
 import { ChartData } from '@/types/dataset'
+import { ChartAnnotations } from './ChartAnnotations'
 
 interface LineChartProps {
   data: ChartData[]
@@ -34,6 +35,7 @@ interface LineChartProps {
     stroke?: string
   }>
   chartTheme?: ChartTheme
+  visualizationId?: string
 }
 
 export function LineChart({
@@ -49,32 +51,33 @@ export function LineChart({
   animated = true,
   strokeWidth = 2,
   referenceLines = [],
-  chartTheme
+  chartTheme,
+  visualizationId
 }: LineChartProps) {
   return (
     <BaseChart height={height}>
       <RechartsLineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
         {showGrid && (
-          <CartesianGrid 
-            strokeDasharray="3 3" 
-            stroke={chartTheme?.grid || '#E5E7EB'} 
-            opacity={0.5} 
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke={chartTheme?.grid || '#E5E7EB'}
+            opacity={0.5}
           />
         )}
-        <XAxis 
+        <XAxis
           dataKey={xKey}
           tick={{ fill: chartTheme?.text || '#6B7280', fontSize: 12 }}
           tickLine={{ stroke: chartTheme?.text || '#6B7280' }}
           axisLine={{ stroke: chartTheme?.text || '#6B7280' }}
         />
-        <YAxis 
+        <YAxis
           tick={{ fill: chartTheme?.text || '#6B7280', fontSize: 12 }}
           tickLine={{ stroke: chartTheme?.text || '#6B7280' }}
           axisLine={{ stroke: chartTheme?.text || '#6B7280' }}
           tickFormatter={(value: number) => formatNumber(value)}
         />
-        <Tooltip 
-          contentStyle={{ 
+        <Tooltip
+          contentStyle={{
             backgroundColor: chartTheme?.tooltip || '#FFFFFF',
             border: `1px solid ${chartTheme?.tooltipBorder || '#E5E7EB'}`,
             borderRadius: '6px',
@@ -84,7 +87,10 @@ export function LineChart({
           formatter={(value: number) => formatNumber(value)}
         />
         {showLegend && <Legend />}
-        
+
+        {/* Render annotations if visualizationId is provided */}
+        {visualizationId && <ChartAnnotations visualizationId={visualizationId} />}
+
         {yKeys.map((key, index) => (
           <Line
             key={key}
@@ -97,17 +103,17 @@ export function LineChart({
             animationBegin={animated ? index * 100 : 0}
           />
         ))}
-        
+
         {referenceLines.map((line, index) => (
-          <ReferenceLine 
+          <ReferenceLine
             key={index}
             {...line}
             strokeDasharray="5 5"
           />
         ))}
-        
+
         {showBrush && (
-          <Brush 
+          <Brush
             dataKey={xKey}
             height={30}
             stroke="hsl(var(--primary))"

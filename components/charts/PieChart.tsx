@@ -1,5 +1,6 @@
 'use client'
 
+import { useTheme } from 'next-themes'
 import {
   PieChart as RechartsPieChart,
   Pie,
@@ -27,6 +28,7 @@ interface PieChartProps {
   showLabels?: boolean
   donut?: boolean
   animated?: boolean
+  visualizationId?: string // Added for consistency but not used (pie charts don't support annotations)
 }
 
 export function PieChart({
@@ -38,6 +40,9 @@ export function PieChart({
   donut = false,
   animated = true
 }: PieChartProps) {
+  const { theme, resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === 'dark' || theme === 'dark'
+
   // Convert ChartData to PieChartData if needed
   const pieData: PieChartData[] = data.map(item => {
     if ('name' in item && 'value' in item) {
@@ -88,12 +93,14 @@ export function PieChart({
               />
             )}
           </Pie>
-          <Tooltip 
-            contentStyle={{ 
-              backgroundColor: 'hsl(var(--card))',
-              border: '1px solid hsl(var(--border))',
-              borderRadius: '6px'
+          <Tooltip
+            contentStyle={{
+              backgroundColor: '#ffffff',
+              border: isDark ? '1px solid #374151' : '1px solid #e5e7eb',
+              borderRadius: '6px',
+              color: isDark ? '#f9fafb' : '#111827'
             }}
+            labelStyle={{ color: isDark ? '#f9fafb' : '#111827' }}
             formatter={(value: any) => formatNumber(Number(value))}
           />
           {showLegend && <Legend />}

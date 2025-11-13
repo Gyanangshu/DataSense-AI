@@ -23,19 +23,22 @@ async function getDataset(id: string, userId: string) {
   })
 }
 
-export default async function VisualizePage({ 
-  params 
-}: { 
-  params: Promise<{ id: string }> 
+export default async function VisualizePage({
+  params,
+  searchParams
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ load?: string }>
 }) {
   const session = await auth()
-  
+
   if (!session) {
     redirect('/login')
   }
 
   // Await params first
   const resolvedParams = await params
+  const resolvedSearchParams = await searchParams
 
   // Then parse the JSON string
   let datasetId = resolvedParams.id
@@ -55,6 +58,8 @@ export default async function VisualizePage({
     redirect('/dashboard')
   }
 
+  const visualizationId = resolvedSearchParams.load
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -62,7 +67,7 @@ export default async function VisualizePage({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-4">
-              <Link 
+              <Link
                 href={`/datasets/${datasetId}`}
                 className="p-2 hover:bg-accent rounded-lg transition-colors"
               >
@@ -70,7 +75,7 @@ export default async function VisualizePage({
               </Link>
               <div>
                 <h1 className="text-xl font-bold text-foreground">
-                  Create Visualization
+                  {visualizationId ? 'Edit Visualization' : 'Create Visualization'}
                 </h1>
                 <p className="text-sm text-muted-foreground">
                   {dataset.name} • {dataset.rowCount?.toLocaleString()} rows
@@ -84,7 +89,14 @@ export default async function VisualizePage({
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <VisualizationBuilder dataset={dataset} />
+        <VisualizationBuilder
+          dataset={{
+            ...dataset,
+            columns: dataset.columns as string[],
+            types: dataset.types as Record<string, string>,
+            stats: dataset.stats as Record<string, unknown>
+          }}
+        />
       </main>
     </div>
   )

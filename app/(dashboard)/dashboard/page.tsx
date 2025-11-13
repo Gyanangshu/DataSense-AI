@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme-toggle'
-import { Database, Upload, LogOut, FileText, Calendar, BarChart3 } from 'lucide-react'
+import { Database, Upload, LogOut, FileText, Calendar, BarChart3, PieChart, LayoutDashboard } from 'lucide-react'
 import Link from 'next/link'
 
 async function getUserDatasets(userId: string) {
@@ -23,17 +23,25 @@ async function getUserDatasets(userId: string) {
 }
 
 async function getStats(userId: string) {
-  const [datasetsCount, totalRows] = await Promise.all([
+  const [datasetsCount, totalRows, visualizationsCount, dashboardsCount] = await Promise.all([
     prisma.dataset.count({ where: { userId } }),
     prisma.dataset.aggregate({
       where: { userId },
       _sum: { rowCount: true },
     }),
+    prisma.visualization.count({
+      where: {
+        dataset: { userId }
+      }
+    }),
+    prisma.dashboard.count({ where: { userId } })
   ])
 
   return {
     datasetsCount,
     totalRows: totalRows._sum.rowCount || 0,
+    visualizationsCount,
+    dashboardsCount,
   }
 }
 
@@ -78,11 +86,11 @@ export default async function DashboardPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Stats Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mb-12">
+        <div className="grid md:grid-cols-4 gap-6 mb-12">
           <div className="bg-card rounded-lg border border-border p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Datasets</p>
+                <p className="text-sm font-medium text-muted-foreground">Datasets</p>
                 <p className="text-3xl font-bold text-foreground mt-1">{stats.datasetsCount}</p>
               </div>
               <Database className="w-10 h-10 text-muted-foreground" />
@@ -90,15 +98,31 @@ export default async function DashboardPage() {
           </div>
 
           <div className="bg-card rounded-lg border border-border p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Rows</p>
-                <p className="text-3xl font-bold text-foreground mt-1">
-                  {stats.totalRows.toLocaleString()}
-                </p>
+            <Link href="/visualizations">
+              <div className="flex items-center justify-between cursor-pointer group">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Charts</p>
+                  <p className="text-3xl font-bold text-foreground mt-1 group-hover:text-primary transition-colors">
+                    {stats.visualizationsCount}
+                  </p>
+                </div>
+                <PieChart className="w-10 h-10 text-muted-foreground group-hover:text-primary transition-colors" />
               </div>
-              <BarChart3 className="w-10 h-10 text-muted-foreground" />
-            </div>
+            </Link>
+          </div>
+
+          <div className="bg-card rounded-lg border border-border p-6">
+            <Link href="/dashboards">
+              <div className="flex items-center justify-between cursor-pointer group">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Dashboards</p>
+                  <p className="text-3xl font-bold text-foreground mt-1 group-hover:text-primary transition-colors">
+                    {stats.dashboardsCount}
+                  </p>
+                </div>
+                <LayoutDashboard className="w-10 h-10 text-muted-foreground group-hover:text-primary transition-colors" />
+              </div>
+            </Link>
           </div>
 
           <div className="bg-card rounded-lg border border-border p-6">
@@ -183,12 +207,26 @@ export default async function DashboardPage() {
         {/* Quick Actions */}
         <div className="grid md:grid-cols-2 gap-6 mt-8">
           <div className="bg-secondary border border-border rounded-lg p-6">
-            <h3 className="font-semibold text-foreground mb-3">🎯 What's Next?</h3>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>✓ Upload more datasets to analyze</li>
-              <li>✓ Click on a dataset to explore it</li>
-              <li>✓ Create visualizations (coming soon)</li>
-              <li>✓ Get AI-powered insights (coming soon)</li>
+            <h3 className="font-semibold text-foreground mb-3">🎯 Quick Actions</h3>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <Link href="/upload" className="text-primary hover:underline">
+                  → Upload a new dataset
+                </Link>
+              </li>
+              <li>
+                <Link href="/visualizations" className="text-primary hover:underline">
+                  → View your charts
+                </Link>
+              </li>
+              <li>
+                <Link href="/dashboards" className="text-primary hover:underline">
+                  → Create custom dashboards
+                </Link>
+              </li>
+              <li className="text-muted-foreground">
+                → Get data insights with AI
+              </li>
             </ul>
           </div>
 

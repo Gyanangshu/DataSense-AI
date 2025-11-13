@@ -4,9 +4,10 @@ import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme-toggle'
-import { ArrowLeft, BarChart3, LineChart, PieChart as PieChartIcon } from 'lucide-react'
+import { ArrowLeft, BarChart3, Brain } from 'lucide-react'
 import DatasetViewer from '@/components/dataset/DatasetViewer'
 import DeleteDatasetButton from '@/components/dataset/DeleteDatasetButton'
+import ExportDatasetButton from '@/components/dataset/ExportDatasetButton'
 
 async function getDataset(id: string, userId: string) {
   return await prisma.dataset.findFirst({
@@ -84,6 +85,7 @@ export default async function DatasetPage({
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <ExportDatasetButton datasetId={dataset.id} datasetName={dataset.name} />
               <Link href={`/datasets/${datasetId}/visualize`}>
                 <Button>
                   <BarChart3 className="w-4 h-4 mr-2" />
@@ -97,8 +99,19 @@ export default async function DatasetPage({
         </div>
       </header>
 
+
+
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className='my-4 flex justify-end'>
+          <Link href={`/datasets/${datasetId}/analyze`}>
+            <Button>
+              <Brain className="w-4 h-4 mr-2" />
+              AI Analysis
+            </Button>
+          </Link>
+        </div>
+
         <DatasetViewer dataset={dataset} />
       </main>
     </div>

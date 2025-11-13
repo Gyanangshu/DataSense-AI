@@ -27,6 +27,10 @@ import { CHART_COLORS } from '@/components/charts/BaseChart'
 import { ChartData } from '@/types/dataset'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import ChartRecommendations from './ChartRecommendations'
+import DataFilter from '@/components/filters/DataFilter'
+import AnnotationControls from '@/components/charts/AnnotationControls'
+import { useFilterStore } from '@/lib/stores/filterStore'
 
 interface VisualizationBuilderProps {
   dataset: {
@@ -34,7 +38,7 @@ interface VisualizationBuilderProps {
     name: string
     columns: string[]
     types: Record<string, string>
-    stats: Record<string, any>
+    stats: Record<string, unknown>
     rowCount: number | null
   }
 }
@@ -52,7 +56,12 @@ export default function VisualizationBuilder({ dataset }: VisualizationBuilderPr
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<ChartData[]>([])
   const [pieData, setPieData] = useState<PieChartData[]>([])
-  
+  const [visualizationId] = useState(`temp-${Date.now()}`) // Temporary ID for unsaved viz
+  const [showAnnotations, setShowAnnotations] = useState(false)
+
+  // Zustand stores
+  const { applyFilters } = useFilterStore()
+
   // Chart configuration state
   const [chartType, setChartType] = useState<ChartType>('bar')
   const [title, setTitle] = useState('New Visualization')
@@ -89,15 +98,15 @@ export default function VisualizationBuilder({ dataset }: VisualizationBuilderPr
   )
 
   const aggregateData = useCallback((
-    rawData: ChartData[], 
-    groupBy: string, 
-    valueColumns: string[], 
+    rawData: ChartData[],
+    groupBy: string,
+    valueColumns: string[],
     type: AggregationType
   ): AggregatedData[] => {
     if (type === 'none') return rawData as AggregatedData[]
-    
+
     const groups: Record<string, ChartData[]> = {}
-    
+
     rawData.forEach(row => {
       const key = String(row[groupBy] || 'Unknown')
       if (!groups[key]) {
@@ -105,28 +114,39 @@ export default function VisualizationBuilder({ dataset }: VisualizationBuilderPr
       }
       groups[key].push(row)
     })
-    
+
     return Object.entries(groups).map(([key, rows]) => {
       const result: AggregatedData = { [groupBy]: key }
-      
+
       if (type === 'count') {
+        // For count, create a 'count' field
         result.count = rows.length
-      } else {
+        // Also populate original columns with count for compatibility
+        valueColumns.forEach(col => {
+          result[col] = rows.length
+        })
+      } else if (type === 'sum' || type === 'avg' || type === 'min' || type === 'max') {
         valueColumns.forEach(col => {
           const values = rows
             .map(row => Number(row[col]))
             .filter(v => !isNaN(v))
-          
+
           if (values.length > 0) {
             if (type === 'sum') {
               result[col] = values.reduce((a, b) => a + b, 0)
             } else if (type === 'avg') {
               result[col] = values.reduce((a, b) => a + b, 0) / values.length
+            } else if (type === 'min') {
+              result[col] = Math.min(...values)
+            } else if (type === 'max') {
+              result[col] = Math.max(...values)
             }
+          } else {
+            result[col] = 0
           }
         })
       }
-      
+
       return result
     })
   }, [])
@@ -145,14 +165,23 @@ export default function VisualizationBuilder({ dataset }: VisualizationBuilderPr
       
       const response = await fetch(`/api/datasets/${dataset.id}/data?${params}`)
       const result = await response.json()
-      
+
+      console.log('📊 Raw data fetched:', result.data.length, 'rows')
+
+      // Apply filters from Zustand store
+      const filteredData = applyFilters(dataset.id, result.data) as ChartData[]
+      console.log('🔍 After filters:', filteredData.length, 'rows')
+
       // Process data based on aggregation
-      let processedData = result.data
-      
+      let processedData: ChartData[] = filteredData
+
       if (aggregation !== 'none' && xAxis) {
-        processedData = aggregateData(result.data, xAxis, yAxis, aggregation)
+        processedData = aggregateData(filteredData, xAxis, yAxis, aggregation)
+        console.log('📈 After aggregation:', processedData.length, 'rows', processedData)
+      } else {
+        console.log('📊 No aggregation, data:', processedData.slice(0, 3))
       }
-      
+
       // For pie charts, transform data
       if (chartType === 'pie' && processedData.length > 0) {
         const pieColumn = yAxis[0] || Object.keys(processedData[0]).find(key => key !== xAxis)
@@ -175,14 +204,32 @@ export default function VisualizationBuilder({ dataset }: VisualizationBuilderPr
     } finally {
       setLoading(false)
     }
-  }, [xAxis, yAxis, aggregation, chartType, dataset.id, aggregateData])
+  }, [xAxis, yAxis, aggregation, chartType, dataset.id, aggregateData, applyFilters])
 
-  // Fetch data when configuration changes
+  // Fetch data when configuration changes OR filters change
   useEffect(() => {
     if ((xAxis && yAxis.length > 0) || (chartType === 'pie' && xAxis)) {
       fetchChartData()
     }
-  }, [xAxis, yAxis, aggregation, chartType, fetchChartData])
+  }, [xAxis, yAxis, aggregation, chartType, fetchChartData, applyFilters])
+
+  const handleApplyRecommendation = (config: Record<string, unknown>) => {
+    // Apply the recommended configuration
+    setChartType(config.type as ChartType)
+    setTitle(String(config.title || 'New Visualization'))
+    setDescription(String(config.description || ''))
+    setXAxis(String(config.xAxis || ''))
+    setYAxis(Array.isArray(config.yAxis) ? config.yAxis as string[] : [])
+    setAggregation((config.aggregation as AggregationType) || 'none')
+    setColorTheme((config.colorTheme as ColorTheme) || 'primary')
+    setShowGrid(Boolean(config.showGrid ?? true))
+    setShowLegend(Boolean(config.showLegend ?? true))
+    setShowLabels(Boolean(config.showLabels ?? false))
+    setAnimated(Boolean(config.animated ?? true))
+    setStacked(Boolean(config.stacked ?? false))
+    setCurved(Boolean(config.curved ?? true))
+    setDonut(Boolean(config.donut ?? false))
+  }
 
   const handleSaveVisualization = async () => {
     try {
@@ -227,13 +274,94 @@ export default function VisualizationBuilder({ dataset }: VisualizationBuilderPr
 
   const getChartComponent = () => {
     const colors = CHART_COLORS[colorTheme]
-    
-    if ((chartType === 'pie' && pieData.length === 0) || (chartType !== 'pie' && data.length === 0)) {
+
+    // Better validation and error messages
+    if (!xAxis && chartType !== 'pie') {
       return (
-        <div className="h-[400px] flex items-center justify-center text-muted-foreground">
-          <div className="text-center">
-            <BarChart3 className="w-12 h-12 mx-auto mb-2 opacity-50" />
-            <p>Select axes to visualize data</p>
+        <div className="h-[400px] flex items-center justify-center">
+          <div className="text-center max-w-md">
+            <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-50 text-muted-foreground" />
+            <p className="font-medium text-foreground mb-2">Select X-Axis</p>
+            <p className="text-sm text-muted-foreground">
+              Please select a column for the X-axis to visualize your data.
+            </p>
+          </div>
+        </div>
+      )
+    }
+
+    if (chartType !== 'pie' && yAxis.length === 0) {
+      return (
+        <div className="h-[400px] flex items-center justify-center">
+          <div className="text-center max-w-md">
+            <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-50 text-muted-foreground" />
+            <p className="font-medium text-foreground mb-2">Select Y-Axis</p>
+            <p className="text-sm text-muted-foreground">
+              Please select at least one numeric column for the Y-axis.
+            </p>
+          </div>
+        </div>
+      )
+    }
+
+    // Check for incompatible axis combinations - SCATTER PLOT NEEDS NUMERIC AXES
+    if (chartType === 'scatter') {
+      const xAxisIsNumeric = numericColumns.includes(xAxis)
+      const yAxisIsNumeric = yAxis.length > 0 && numericColumns.includes(yAxis[0])
+
+      if (!xAxisIsNumeric || !yAxisIsNumeric) {
+        return (
+          <div className="h-[400px] flex items-center justify-center">
+            <div className="text-center max-w-md">
+              <TrendingUp className="w-12 h-12 mx-auto mb-3 opacity-50 text-amber-500" />
+              <p className="font-medium text-foreground mb-2">Scatter Plot Requires Numeric Axes</p>
+              <p className="text-sm text-muted-foreground mb-3">
+                Scatter plots require BOTH X and Y axes to be numeric columns.
+              </p>
+              <div className="text-xs text-left space-y-2 bg-secondary/30 p-3 rounded-lg">
+                <div>
+                  <span className="font-medium">X-Axis ({xAxis || 'none'}):</span>{' '}
+                  <span className={xAxisIsNumeric ? 'text-green-500' : 'text-red-500'}>
+                    {xAxisIsNumeric ? '✓ Numeric' : '✗ Not Numeric (need: Sales_Amount, Profit, etc.)'}
+                  </span>
+                </div>
+                <div>
+                  <span className="font-medium">Y-Axis ({yAxis[0] || 'none'}):</span>{' '}
+                  <span className={yAxisIsNumeric ? 'text-green-500' : 'text-red-500'}>
+                    {yAxisIsNumeric ? '✓ Numeric' : '✗ Not Numeric (need: Units_Sold, Return_Rate, etc.)'}
+                  </span>
+                </div>
+              </div>
+              <p className="text-sm text-primary mt-3">
+                Numeric columns: {numericColumns.join(', ') || 'none available'}
+              </p>
+            </div>
+          </div>
+        )
+      }
+    }
+
+    // Only show "No Data" error if we have axes selected but truly no data
+    const hasNoData = (chartType === 'pie' && pieData.length === 0) || (chartType !== 'pie' && data.length === 0)
+    const hasAxesSelected = xAxis && (chartType === 'pie' || yAxis.length > 0)
+
+    if (hasNoData && hasAxesSelected) {
+      return (
+        <div className="h-[400px] flex items-center justify-center">
+          <div className="text-center max-w-md">
+            <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-50 text-amber-500" />
+            <p className="font-medium text-foreground mb-2">No Data to Display</p>
+            <p className="text-sm text-muted-foreground mb-3">
+              The selected configuration produced no data. Possible reasons:
+            </p>
+            <ul className="text-xs text-muted-foreground text-left list-disc list-inside space-y-1">
+              <li>Active filters excluded all rows</li>
+              <li>Selected columns contain only null/empty values</li>
+              <li>Aggregation type doesn not match the data</li>
+            </ul>
+            <p className="text-sm text-primary mt-3">
+              Try removing filters or selecting different columns.
+            </p>
           </div>
         </div>
       )
@@ -251,6 +379,7 @@ export default function VisualizationBuilder({ dataset }: VisualizationBuilderPr
             showLegend={showLegend}
             curved={curved}
             animated={animated}
+            visualizationId={visualizationId}
           />
         )
       case 'bar':
@@ -265,6 +394,7 @@ export default function VisualizationBuilder({ dataset }: VisualizationBuilderPr
             stacked={stacked}
             showLabels={showLabels}
             animated={animated}
+            visualizationId={visualizationId}
           />
         )
       case 'pie':
@@ -276,6 +406,7 @@ export default function VisualizationBuilder({ dataset }: VisualizationBuilderPr
             showLabels={showLabels}
             donut={donut}
             animated={animated}
+            visualizationId={visualizationId}
           />
         )
       case 'scatter':
@@ -287,12 +418,15 @@ export default function VisualizationBuilder({ dataset }: VisualizationBuilderPr
             colors={colors}
             showGrid={showGrid}
             animated={animated}
+            visualizationId={visualizationId}
           />
         )
       default:
         return null
     }
   }
+
+  console.log("chart Data is here: ", data)
 
   return (
     <Tabs defaultValue="config" className="w-full">
@@ -305,6 +439,32 @@ export default function VisualizationBuilder({ dataset }: VisualizationBuilderPr
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Configuration Panel */}
           <div className="lg:col-span-1 space-y-4">
+            {/* Data Filters */}
+            <DataFilter
+              datasetId={dataset.id}
+              columns={dataset.columns}
+              types={dataset.types}
+              onFilterChange={() => {
+                // Force re-fetch when filters change
+                if (xAxis && yAxis.length > 0) {
+                  fetchChartData()
+                }
+              }}
+            />
+
+            {/* AI Chart Recommendations */}
+            <ChartRecommendations
+              datasetId={dataset.id}
+              onApplyRecommendation={handleApplyRecommendation}
+            />
+
+            {/* Chart Annotations */}
+            <AnnotationControls
+              visualizationId={visualizationId}
+              collapsed={!showAnnotations}
+              onToggle={() => setShowAnnotations(!showAnnotations)}
+            />
+
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
