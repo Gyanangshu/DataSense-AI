@@ -41,6 +41,12 @@ interface VisualizationBuilderProps {
     stats: Record<string, unknown>
     rowCount: number | null
   }
+  savedVisualization?: {
+    id: string
+    name: string
+    type: 'line' | 'bar' | 'pie' | 'scatter'
+    config: Record<string, unknown>
+  }
 }
 
 type ChartType = 'line' | 'bar' | 'pie' | 'scatter'
@@ -51,21 +57,21 @@ interface AggregatedData extends ChartData {
   [key: string]: string | number | Date
 }
 
-export default function VisualizationBuilder({ dataset }: VisualizationBuilderProps) {
+export default function VisualizationBuilder({ dataset, savedVisualization }: VisualizationBuilderProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<ChartData[]>([])
   const [pieData, setPieData] = useState<PieChartData[]>([])
-  const [visualizationId] = useState(`temp-${Date.now()}`) // Temporary ID for unsaved viz
+  const [visualizationId] = useState(savedVisualization?.id || `temp-${Date.now()}`) // Use saved ID or temp ID
   const [showAnnotations, setShowAnnotations] = useState(false)
 
   // Zustand stores
   const { applyFilters } = useFilterStore()
 
   // Chart configuration state
-  const [chartType, setChartType] = useState<ChartType>('bar')
-  const [title, setTitle] = useState('New Visualization')
-  const [description, setDescription] = useState('')
+  const [chartType, setChartType] = useState<ChartType>(savedVisualization?.type || 'bar')
+  const [title, setTitle] = useState(savedVisualization?.name || 'New Visualization')
+  const [description, setDescription] = useState(savedVisualization?.description || '')
   const [xAxis, setXAxis] = useState('')
   const [yAxis, setYAxis] = useState<string[]>([])
   const [aggregation, setAggregation] = useState<AggregationType>('none')
@@ -206,6 +212,24 @@ export default function VisualizationBuilder({ dataset }: VisualizationBuilderPr
     }
   }, [xAxis, yAxis, aggregation, chartType, dataset.id, aggregateData, applyFilters])
 
+  // Load saved visualization config on mount
+  useEffect(() => {
+    if (savedVisualization && savedVisualization.config) {
+      const config = savedVisualization.config
+      setXAxis(String(config.xAxis || ''))
+      setYAxis(Array.isArray(config.yAxis) ? config.yAxis as string[] : [])
+      setAggregation((config.aggregation as AggregationType) || 'none')
+      setColorTheme((config.colorTheme as ColorTheme) || 'primary')
+      setShowGrid(Boolean(config.showGrid ?? true))
+      setShowLegend(Boolean(config.showLegend ?? true))
+      setShowLabels(Boolean(config.showLabels ?? false))
+      setAnimated(Boolean(config.animated ?? true))
+      setStacked(Boolean(config.stacked ?? false))
+      setCurved(Boolean(config.curved ?? true))
+      setDonut(Boolean(config.donut ?? false))
+    }
+  }, [savedVisualization])
+
   // Fetch data when configuration changes OR filters change
   useEffect(() => {
     if ((xAxis && yAxis.length > 0) || (chartType === 'pie' && xAxis)) {
@@ -249,9 +273,13 @@ export default function VisualizationBuilder({ dataset }: VisualizationBuilderPr
         curved,
         donut
       }
-      
-      const response = await fetch('/api/visualizations', {
-        method: 'POST',
+
+      const isEditing = !!savedVisualization
+      const url = isEditing ? `/api/visualizations/${savedVisualization.id}` : '/api/visualizations'
+      const method = isEditing ? 'PUT' : 'POST'
+
+      const response = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: title,
@@ -260,9 +288,9 @@ export default function VisualizationBuilder({ dataset }: VisualizationBuilderPr
           datasetId: dataset.id
         })
       })
-      
+
       if (response.ok) {
-        toast.success('Visualization saved successfully!')
+        toast.success(isEditing ? 'Visualization updated successfully!' : 'Visualization saved successfully!')
         router.push(`/datasets/${dataset.id}`)
       } else {
         throw new Error('Failed to save')
@@ -426,7 +454,7 @@ export default function VisualizationBuilder({ dataset }: VisualizationBuilderPr
     }
   }
 
-  console.log("chart Data is here: ", data)
+  // console.log("chart Data is here: ", data)
 
   return (
     <Tabs defaultValue="config" className="w-full">

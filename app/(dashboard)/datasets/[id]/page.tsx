@@ -26,6 +26,7 @@ async function getDataset(id: string, userId: string) {
       stats: true,
       sourceType: true,
       createdAt: true,
+      data: true, // Add data for PDF export
     }
   })
 }
@@ -85,7 +86,12 @@ export default async function DatasetPage({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <ExportDatasetButton datasetId={dataset.id} datasetName={dataset.name} />
+              <ExportDatasetButton
+                datasetId={dataset.id}
+                datasetName={dataset.name}
+                columns={dataset.columns as string[]}
+                data={dataset.data as Record<string, unknown>[]}
+              />
               <Link href={`/datasets/${datasetId}/visualize`}>
                 <Button>
                   <BarChart3 className="w-4 h-4 mr-2" />

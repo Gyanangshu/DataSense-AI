@@ -179,7 +179,7 @@ export default async function DashboardsPage() {
 
         {/* Quick Tip */}
         {dashboards.length > 0 && (
-          <Card className="mt-8 bg-gradient-to-br from-primary/5 to-transparent border-primary/20">
+          <Card className="mt-8 bg-linear-to-br from-primary/5 to-transparent border-primary/20">
             <CardContent className="py-6">
               <div className="flex items-start gap-3">
                 <Sparkles className="w-5 h-5 text-primary shrink-0 mt-0.5" />

@@ -15,6 +15,7 @@ import { BaseChart, CHART_COLORS, ChartTheme } from './BaseChart'
 import { formatNumber } from '@/lib/utils'
 import { ChartData } from '@/types/dataset'
 import { ChartAnnotations } from './ChartAnnotations'
+import { useChartStore } from '@/lib/stores/chartStore'
 
 interface LineChartProps {
   data: ChartData[]
@@ -54,6 +55,19 @@ export function LineChart({
   chartTheme,
   visualizationId
 }: LineChartProps) {
+  const { setDrillDown } = useChartStore()
+
+  // Handle line click for drill-down
+  const handleLineClick = (dataPoint: unknown) => {
+    if (visualizationId) {
+      setDrillDown({
+        visualizationId,
+        dataPoint: dataPoint as Record<string, unknown>,
+        timestamp: Date.now()
+      })
+    }
+  }
+
   return (
     <BaseChart height={height}>
       <RechartsLineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
@@ -101,6 +115,8 @@ export function LineChart({
             dot={false}
             animationDuration={animated ? 1500 : 0}
             animationBegin={animated ? index * 100 : 0}
+            onClick={(data) => handleLineClick(data)}
+            cursor="pointer"
           />
         ))}
 

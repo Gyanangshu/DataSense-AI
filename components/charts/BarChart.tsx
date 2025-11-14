@@ -15,6 +15,7 @@ import { BaseChart, CHART_COLORS, ChartTheme } from './BaseChart'
 import { formatNumber } from '@/lib/utils'
 import { ChartData } from '@/types/dataset'
 import { ChartAnnotations } from './ChartAnnotations'
+import { useChartStore } from '@/lib/stores/chartStore'
 
 interface BarChartProps {
   data: ChartData[]
@@ -49,6 +50,18 @@ export function BarChart({
 }: BarChartProps) {
   const xAxisKey = horizontal ? undefined : xKey
   const yAxisKey = horizontal ? xKey : undefined
+  const { setDrillDown } = useChartStore()
+
+  // Handle bar click for drill-down
+  const handleBarClick = (dataPoint: unknown) => {
+    if (visualizationId) {
+      setDrillDown({
+        visualizationId,
+        dataPoint: dataPoint as Record<string, unknown>,
+        timestamp: Date.now()
+      })
+    }
+  }
 
   return (
     <BaseChart height={height}>
@@ -92,9 +105,6 @@ export function BarChart({
         />
         {showLegend && <Legend />}
 
-        {/* Render annotations if visualizationId is provided */}
-        {visualizationId && <ChartAnnotations visualizationId={visualizationId} />}
-
         {yKeys.map((key, index) => (
           <Bar
             key={key}
@@ -103,12 +113,14 @@ export function BarChart({
             stackId={stacked ? 'stack' : undefined}
             animationDuration={animated ? 1500 : 0}
             animationBegin={animated ? index * 100 : 0}
+            onClick={(data) => handleBarClick(data)}
+            cursor="pointer"
           >
             {showLabels && (
               <LabelList
                 dataKey={key}
                 position="top"
-                formatter={(value: any) => String(formatNumber(Number(value)))}
+                formatter={(value: unknown) => String(formatNumber(Number(value)))}
               />
             )}
             {/* Individual cell colors for single series */}
@@ -117,6 +129,9 @@ export function BarChart({
             ))}
           </Bar>
         ))}
+
+        {/* Render annotations AFTER bars so they appear on top */}
+        {visualizationId && <ChartAnnotations visualizationId={visualizationId} />}
       </RechartsBarChart>
     </BaseChart>
   )

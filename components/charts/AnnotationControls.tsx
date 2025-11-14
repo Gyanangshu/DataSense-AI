@@ -36,7 +36,7 @@ export default function AnnotationControls({
   collapsed = false,
   onToggle
 }: AnnotationControlsProps) {
-  const { annotations, addAnnotation, removeAnnotation, clearAnnotations, getAnnotations } = useChartStore()
+  const { addAnnotation, removeAnnotation, clearAnnotations, getAnnotations } = useChartStore()
 
   const vizAnnotations = getAnnotations(visualizationId)
 
@@ -55,9 +55,19 @@ export default function AnnotationControls({
   })
 
   const handleAddAnnotation = () => {
-    if (!newAnnotation.x || !newAnnotation.y) {
-      toast.error('Please provide X and Y coordinates')
-      return
+    // Validation: For lines, either X or Y is required (not both)
+    // For points/text, both X and Y are required
+    if (newAnnotation.type === 'line') {
+      if (!newAnnotation.x && !newAnnotation.y) {
+        toast.error('For reference lines, provide either X (vertical) or Y (horizontal) coordinate')
+        return
+      }
+    } else {
+      // For point and text markers
+      if (!newAnnotation.x || !newAnnotation.y) {
+        toast.error('Please provide both X and Y coordinates')
+        return
+      }
     }
 
     if (newAnnotation.type === 'text' && !newAnnotation.text) {
@@ -69,8 +79,8 @@ export default function AnnotationControls({
       id: `annotation-${Date.now()}`,
       visualizationId,
       type: newAnnotation.type,
-      x: newAnnotation.x,
-      y: Number(newAnnotation.y),
+      x: newAnnotation.x || undefined,
+      y: newAnnotation.y ? Number(newAnnotation.y) : undefined,
       text: newAnnotation.text,
       color: newAnnotation.color,
       strokeWidth: 2,

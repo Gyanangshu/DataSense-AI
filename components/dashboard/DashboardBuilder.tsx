@@ -40,12 +40,32 @@ interface Visualization {
   dataset: {
     id: string
     name: string
+    data?: unknown
+    columns?: unknown
+    types?: unknown
   }
 }
 
 interface DashboardBuilderProps {
   userId: string
   visualizations: Visualization[]
+  existingDashboard?: {
+    id: string
+    name: string
+    description: string | null
+    config: {
+      layout?: Array<{
+        id: string
+        visualizationId: string
+        x: number
+        y: number
+        w: number
+        h: number
+      }>
+      preset?: string
+    } | null
+    selectedVizIds: string[]
+  }
 }
 
 interface DashboardItem {
@@ -65,12 +85,12 @@ const layoutPresets = [
   { value: 'custom', label: 'Custom Layout', cols: 12, rows: 4 }
 ]
 
-export default function DashboardBuilder({ userId, visualizations }: DashboardBuilderProps) {
+export default function DashboardBuilder({ userId, visualizations, existingDashboard }: DashboardBuilderProps) {
   const router = useRouter()
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [layoutPreset, setLayoutPreset] = useState('custom')
-  const [items, setItems] = useState<DashboardItem[]>([])
+  const [name, setName] = useState(existingDashboard?.name || '')
+  const [description, setDescription] = useState(existingDashboard?.description || '')
+  const [layoutPreset, setLayoutPreset] = useState(existingDashboard?.config?.preset || 'custom')
+  const [items, setItems] = useState<DashboardItem[]>(existingDashboard?.config?.layout || [])
   const [saving, setSaving] = useState(false)
 
   // Convert items to react-grid-layout format
@@ -179,8 +199,12 @@ export default function DashboardBuilder({ userId, visualizations }: DashboardBu
 
     setSaving(true)
     try {
-      const response = await fetch('/api/dashboards', {
-        method: 'POST',
+      const isEditing = !!existingDashboard
+      const url = isEditing ? `/api/dashboards/${existingDashboard.id}` : '/api/dashboards'
+      const method = isEditing ? 'PUT' : 'POST'
+
+      const response = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name,
@@ -194,10 +218,10 @@ export default function DashboardBuilder({ userId, visualizations }: DashboardBu
 
       if (response.ok) {
         const data = await response.json()
-        toast.success('Dashboard created successfully!')
+        toast.success(isEditing ? 'Dashboard updated successfully!' : 'Dashboard created successfully!')
         router.push(`/dashboards/${data.id}`)
       } else {
-        throw new Error('Failed to create dashboard')
+        throw new Error(isEditing ? 'Failed to update dashboard' : 'Failed to create dashboard')
       }
     } catch (error) {
       console.error('Error creating dashboard:', error)
@@ -283,7 +307,7 @@ export default function DashboardBuilder({ userId, visualizations }: DashboardBu
                 ) : (
                   <>
                     <Save className="w-4 h-4 mr-2" />
-                    Save Dashboard
+                    {existingDashboard ? 'Update Dashboard' : 'Save Dashboard'}
                   </>
                 )}
               </Button>
@@ -392,6 +416,7 @@ export default function DashboardBuilder({ userId, visualizations }: DashboardBu
                 compactType="vertical"
                 preventCollision={false}
                 margin={[16, 16]}
+                draggableHandle=".drag-handle"
               >
                 {items.map(item => {
                   const visualization = visualizations.find(
@@ -407,7 +432,7 @@ export default function DashboardBuilder({ userId, visualizations }: DashboardBu
                       <div className="h-full flex flex-col">
                         {/* Item Header */}
                         <div className="flex items-center justify-between p-3 border-b border-border bg-secondary/30">
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0 drag-handle cursor-move">
                             <p className="text-sm font-medium truncate">
                               {visualization.name}
                             </p>
@@ -418,7 +443,10 @@ export default function DashboardBuilder({ userId, visualizations }: DashboardBu
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => removeItem(item.id)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              removeItem(item.id)
+                            }}
                             className="shrink-0 h-7 w-7"
                           >
                             <Trash2 className="w-3 h-3" />

@@ -183,18 +183,59 @@ export class PDFService {
    * Capture chart element as image
    */
   static async captureChartImage(elementId: string): Promise<string> {
+    console.log('🔍 Looking for element with id:', elementId)
+
     const element = document.getElementById(elementId)
     if (!element) {
+      const allChartElements = document.querySelectorAll('[data-chart-id]')
+      console.error('❌ Element not found. Available chart elements:',
+        Array.from(allChartElements).map(el => ({
+          id: el.id,
+          dataChartId: el.getAttribute('data-chart-id')
+        }))
+      )
       throw new Error(`Element with id "${elementId}" not found`)
     }
 
-    const canvas = await html2canvas(element, {
-      backgroundColor: '#ffffff',
-      scale: 2,
-      logging: false
-    })
+    console.log('✅ Found element, capturing...')
 
-    return canvas.toDataURL('image/png')
+    // Store references to all stylesheet links
+    const linkElements = Array.from(document.querySelectorAll('link[rel="stylesheet"]')) as HTMLLinkElement[]
+    const originalHrefs = linkElements.map(link => link.href)
+
+    try {
+      // Temporarily remove all stylesheet links
+      linkElements.forEach(link => {
+        link.href = ''
+      })
+
+      // Small delay to ensure stylesheets are unloaded
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      // Capture with html2canvas (no stylesheets = no oklab error)
+      const canvas = await html2canvas(element, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        logging: false,
+        allowTaint: true,
+        useCORS: true
+      })
+
+      console.log('✅ Capture successful!')
+      return canvas.toDataURL('image/png')
+    } catch (error) {
+      console.error('❌ html2canvas error:', error)
+      throw error
+    } finally {
+      // Restore all stylesheet links
+      linkElements.forEach((link, index) => {
+        link.href = originalHrefs[index]
+      })
+
+      // Small delay to ensure stylesheets are reloaded
+      await new Promise(resolve => setTimeout(resolve, 100))
+      console.log('✨ Stylesheets restored')
+    }
   }
 
   /**

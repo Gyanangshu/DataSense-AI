@@ -99,7 +99,7 @@ export async function PUT(
 
     const { id } = await params
     const body = await req.json()
-    const { name, config } = body
+    const { name, type, config } = body
 
     // Verify ownership
     const visualization = await prisma.visualization.findFirst({
@@ -119,6 +119,7 @@ export async function PUT(
       where: { id },
       data: {
         name,
+        type,
         config
       }
     })

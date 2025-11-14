@@ -23,6 +23,31 @@ async function getDataset(id: string, userId: string) {
   })
 }
 
+async function getVisualization(id: string, userId: string) {
+  const visualization = await prisma.visualization.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      type: true,
+      config: true,
+      datasetId: true,
+      dataset: {
+        select: {
+          userId: true
+        }
+      }
+    }
+  })
+
+  // Verify the visualization belongs to the user
+  if (!visualization || visualization.dataset.userId !== userId) {
+    return null
+  }
+
+  return visualization
+}
+
 export default async function VisualizePage({
   params,
   searchParams
@@ -59,6 +84,11 @@ export default async function VisualizePage({
   }
 
   const visualizationId = resolvedSearchParams.load
+  let savedVisualization = null
+
+  if (visualizationId) {
+    savedVisualization = await getVisualization(visualizationId, session.user.id)
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -96,6 +126,12 @@ export default async function VisualizePage({
             types: dataset.types as Record<string, string>,
             stats: dataset.stats as Record<string, unknown>
           }}
+          savedVisualization={savedVisualization ? {
+            id: savedVisualization.id,
+            name: savedVisualization.name,
+            type: savedVisualization.type as 'line' | 'bar' | 'pie' | 'scatter',
+            config: savedVisualization.config as Record<string, unknown>
+          } : undefined}
         />
       </main>
     </div>

@@ -88,7 +88,9 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
     }
 
     const dataset = visualization.dataset
-    const data = (dataset.data as Record<string, unknown>[]) || []
+    const rawData = (dataset.data as Record<string, unknown>[]) || []
+    // Cast to ChartData for type compatibility
+    const data = rawData as Array<Record<string, string | number | Date>>
 
     if (!data || data.length === 0) {
       return (
@@ -107,11 +109,12 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
             data={data}
             xKey={config.xAxis || ''}
             yKeys={config.yAxis || []}
+            height={300}
             showGrid={config.showGrid ?? true}
             showLegend={config.showLegend ?? true}
-            showLabels={config.showLabels ?? false}
             animated={config.animated ?? true}
             curved={config.curved ?? true}
+            visualizationId={visualization.id}
           />
         )
       case 'bar':
@@ -120,11 +123,13 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
             data={data}
             xKey={config.xAxis || ''}
             yKeys={config.yAxis || []}
+            height={300}
             showGrid={config.showGrid ?? true}
             showLegend={config.showLegend ?? true}
             showLabels={config.showLabels ?? false}
             animated={config.animated ?? true}
             stacked={config.stacked ?? false}
+            visualizationId={visualization.id}
           />
         )
       case 'pie':
@@ -136,10 +141,12 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
         return (
           <PieChart
             data={pieData}
+            height={300}
             showLegend={config.showLegend ?? true}
             showLabels={config.showLabels ?? false}
             animated={config.animated ?? true}
             donut={config.donut ?? false}
+            visualizationId={visualization.id}
           />
         )
       case 'scatter':
@@ -148,9 +155,10 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
             data={data}
             xKey={config.xAxis || ''}
             yKey={config.yAxis?.[0] || ''}
+            height={300}
             showGrid={config.showGrid ?? true}
-            showLegend={config.showLegend ?? true}
             animated={config.animated ?? true}
+            visualizationId={visualization.id}
           />
         )
       default:
@@ -205,7 +213,10 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
           return (
             <div
               key={item.id}
+              id={visualization.id}
               className="bg-card border border-border rounded-lg shadow-sm overflow-hidden"
+              data-chart-id={visualization.id}
+              data-chart-title={visualization.name}
             >
               <Card className="h-full border-0">
                 <CardHeader className="border-b border-border bg-secondary/20 p-4">

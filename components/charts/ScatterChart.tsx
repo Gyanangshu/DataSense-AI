@@ -13,6 +13,7 @@ import {
 import { formatNumber } from '@/lib/utils'
 import { ChartData } from '@/types/dataset'
 import { ChartAnnotations } from './ChartAnnotations'
+import { useChartStore } from '@/lib/stores/chartStore'
 
 interface ScatterChartProps {
   data: ChartData[]
@@ -37,8 +38,20 @@ export function ScatterChart({
 }: ScatterChartProps) {
   const { theme, resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark' || theme === 'dark'
+  const { setDrillDown } = useChartStore()
 
   console.log("Scatter Chart Data: ", data);
+
+  // Handle scatter point click for drill-down
+  const handleScatterClick = (dataPoint: unknown) => {
+    if (visualizationId) {
+      setDrillDown({
+        visualizationId,
+        dataPoint: dataPoint as Record<string, unknown>,
+        timestamp: Date.now()
+      })
+    }
+  }
 
   return (
     <div style={{ width: '100%', height }}>
@@ -83,6 +96,8 @@ export function ScatterChart({
             data={data}
             fill={colors[0]}
             animationDuration={animated ? 1500 : 0}
+            onClick={(data) => handleScatterClick(data)}
+            cursor="pointer"
           />
         </RechartsScatterChart>
       </ResponsiveContainer>
