@@ -17,13 +17,14 @@ model User {
   emailVerified DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  
-  accounts      Account[]
-  sessions      Session[]
-  projects      Project[]
-  datasets      Dataset[]
-  dashboards    Dashboard[]
-  
+
+  accounts       Account[]
+  sessions       Session[]
+  projects       Project[]
+  datasets       Dataset[]
+  dashboards     Dashboard[]
+  textDocuments  TextDocument[]
+
   @@map("users")
 }
 
@@ -108,18 +109,47 @@ model Visualization {
   name        String
   type        String    // 'line', 'bar', 'pie', 'scatter'
   config      Json      // Chart configuration
-  
+
   datasetId   String
   dataset     Dataset   @relation(fields: [datasetId], references: [id], onDelete: Cascade)
   dashboardId String?
   dashboard   Dashboard? @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
-  
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  
+
   @@index([datasetId])
   @@index([dashboardId])
   @@map("visualizations")
+}
+
+// Text Document model for qualitative analysis
+model TextDocument {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  fileType    String    // 'TXT', 'DOCX', 'PDF'
+  fileName    String?
+  fileSize    Int?
+  wordCount   Int?
+
+  // Text content
+  content     String    @db.Text
+
+  // AI Analysis results
+  themes      Json?     // Extracted themes
+  sentiment   Json?     // Sentiment analysis (positive/negative/neutral scores)
+  keywords    Json?     // Extracted keywords
+  summary     String?   @db.Text
+
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("text_documents")
 }
 
 // NextAuth v5 models

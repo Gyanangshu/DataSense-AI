@@ -141,7 +141,7 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
         return (
           <PieChart
             data={pieData}
-            height={300}
+            height={400}
             showLegend={config.showLegend ?? true}
             showLabels={config.showLabels ?? false}
             animated={config.animated ?? true}
@@ -197,7 +197,7 @@ export default function DashboardViewer({ dashboard }: DashboardViewerProps) {
         layout={layout}
         cols={12}
         rowHeight={60}
-        width={1200}
+        width={1440}
         isDraggable={false}
         isResizable={false}
         compactType="vertical"

@@ -346,20 +346,42 @@ export class AIService {
   /**
    * Helper: run a prompt and return plain text output (Gemini SDK returns .text)
    * We send short, explicit instructions asking the model to return valid JSON.
+   * Includes retry logic for handling 503 errors (model overloaded)
    */
-  private static async runTextGeneration(prompt: string, model = 'gemini-2.5-flash', temperature = 0.3, maxOutputTokens = 1000) {
-    const resp = await ai.models.generateContent({
-      model,
-      // contents can be an array of messages/parts depending on SDK; simple text below
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      temperature,
-      max_output_tokens: maxOutputTokens
-    })
+  private static async runTextGeneration(prompt: string, model = 'gemini-2.0-flash-lite', temperature = 0.3, maxOutputTokens = 1000, retries = 3) {
+    let lastError: any
 
-    // The SDK returns a string-friendly representation on many clients; use .text or .output?.[0]
-    // Most examples show `response.text`. If your SDK returns a different field, inspect resp.
-    const text = (resp as any)?.text ?? (resp?.output?.[0]?.content ?? '')
-    return String(text || '')
+    for (let attempt = 0; attempt < retries; attempt++) {
+      try {
+        const resp = await ai.models.generateContent({
+          model,
+          // contents can be an array of messages/parts depending on SDK; simple text below
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          temperature,
+          max_output_tokens: maxOutputTokens
+        })
+
+        // The SDK returns a string-friendly representation on many clients; use .text or .output?.[0]
+        // Most examples show `response.text`. If your SDK returns a different field, inspect resp.
+        const text = (resp as any)?.text ?? (resp?.output?.[0]?.content ?? '')
+        return String(text || '')
+      } catch (error: any) {
+        lastError = error
+        const is503 = error?.status === 503 || error?.message?.includes('overloaded') || error?.message?.includes('UNAVAILABLE')
+
+        if (is503 && attempt < retries - 1) {
+          // Exponential backoff: wait 1s, 2s, 4s...
+          const waitTime = Math.pow(2, attempt) * 1000
+          console.log(`Gemini API overloaded (503), retrying in ${waitTime}ms... (attempt ${attempt + 1}/${retries})`)
+          await new Promise(resolve => setTimeout(resolve, waitTime))
+          continue
+        }
+
+        throw error
+      }
+    }
+
+    throw lastError
   }
 
   // Extract themes (returns structure validated by zod)
@@ -460,6 +482,130 @@ Sample texts: ${textData.slice(0, 10).join('\n')}`
     } catch (err) {
       console.error('Insight generation error (Gemini):', err)
       throw new Error('Failed to generate insights')
+    }
+  }
+
+  /**
+   * Analyze a text document - extract themes, sentiment, keywords, and summary
+   */
+  static async analyzeDocument(content: string): Promise<{
+    themes: Array<{ name: string; description: string; relevance: number }>
+    sentiment: {
+      overall: 'positive' | 'negative' | 'neutral'
+      score: number
+      breakdown: { positive: number; neutral: number; negative: number }
+    }
+    keywords: string[]
+    summary: string
+  }> {
+    try {
+      const truncated = content.slice(0, 12000)
+      const system = `You are an expert qualitative data analyst. Analyze the provided text and extract:
+1. Main themes (3-5 key themes with descriptions and relevance scores 0-1)
+2. Sentiment analysis (overall sentiment and breakdown percentages that sum to 1.0)
+3. Keywords (10-15 most important keywords or phrases)
+4. A concise summary (2-3 sentences that capture the MAIN POINTS and KEY FINDINGS, not just the first lines)
+
+IMPORTANT: The summary must be a thoughtful synthesis of the document's main ideas, NOT just copying the opening lines.
+
+Return ONLY valid JSON with NO markdown formatting. Use this exact structure:
+{
+  "themes": [{"name": "Theme Name", "description": "Brief description", "relevance": 0.95}],
+  "sentiment": {
+    "overall": "positive",
+    "score": 0.7,
+    "breakdown": {"positive": 0.7, "neutral": 0.2, "negative": 0.1}
+  },
+  "keywords": ["keyword1", "keyword2"],
+  "summary": "Thoughtful 2-3 sentence summary of main points"
+}`
+
+      const user = `Analyze this document:\n\n${truncated}`
+      const responseText = await this.runTextGeneration(`${system}\n\n${user}`, 'gemini-2.5-flash', 0.3, 1200)
+
+      // Remove markdown code blocks if present
+      let jsonText = responseText.trim()
+      if (jsonText.startsWith('```json')) {
+        jsonText = jsonText.replace(/^```json\s*\n/, '').replace(/\n```\s*$/, '')
+      } else if (jsonText.startsWith('```')) {
+        jsonText = jsonText.replace(/^```\s*\n/, '').replace(/\n```\s*$/, '')
+      }
+
+      console.log('AI Response (first 500 chars):', jsonText.slice(0, 500))
+      const parsed = JSON.parse(jsonText.trim())
+      console.log('Parsed themes:', parsed.themes?.length || 0, 'themes found')
+
+      return {
+        themes: parsed.themes || [],
+        sentiment: {
+          overall: parsed.sentiment?.overall || 'neutral',
+          score: parsed.sentiment?.score || 0,
+          breakdown: {
+            positive: parsed.sentiment?.breakdown?.positive || 0,
+            neutral: parsed.sentiment?.breakdown?.neutral || 1,
+            negative: parsed.sentiment?.breakdown?.negative || 0
+          }
+        },
+        keywords: parsed.keywords || [],
+        summary: parsed.summary || 'No summary available'
+      }
+    } catch (error) {
+      console.error('Document analysis error:', error)
+
+      // Return fallback analysis
+      return this.getFallbackAnalysis(content)
+    }
+  }
+
+  /**
+   * Fallback analysis when AI fails
+   */
+  private static getFallbackAnalysis(content: string): {
+    themes: Array<{ name: string; description: string; relevance: number }>
+    sentiment: {
+      overall: 'positive' | 'negative' | 'neutral'
+      score: number
+      breakdown: { positive: number; neutral: number; negative: number }
+    }
+    keywords: string[]
+    summary: string
+  } {
+    const words = content.toLowerCase().match(/\b[a-z]{4,}\b/g) || []
+    const wordFreq = words.reduce((acc, word) => {
+      acc[word] = (acc[word] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+
+    const keywords = Object.entries(wordFreq)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 10)
+      .map(([word]) => word)
+
+    // Create a better summary by taking sentences from throughout the document
+    const sentences = content.match(/[^.!?]+[.!?]+/g) || []
+    let summary = 'No summary available'
+    if (sentences.length > 0) {
+      // Take first sentence and a middle sentence if available
+      const firstSentence = sentences[0]?.trim() || ''
+      const middleSentence = sentences.length > 2 ? (sentences[Math.floor(sentences.length / 2)]?.trim() || '') : ''
+      summary = middleSentence
+        ? `${firstSentence} ${middleSentence}`.slice(0, 300)
+        : firstSentence.slice(0, 300)
+    }
+
+    return {
+      themes: [{
+        name: 'General Content',
+        description: 'Document contains general text content',
+        relevance: 1.0
+      }],
+      sentiment: {
+        overall: 'neutral',
+        score: 0,
+        breakdown: { positive: 0.33, neutral: 0.34, negative: 0.33 }
+      },
+      keywords,
+      summary
     }
   }
 

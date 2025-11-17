@@ -409,7 +409,7 @@ export default function DashboardBuilder({ userId, visualizations, existingDashb
                 layout={layout}
                 cols={12}
                 rowHeight={60}
-                width={1200}
+                width={1400}
                 onLayoutChange={handleLayoutChange}
                 isDraggable={true}
                 isResizable={true}

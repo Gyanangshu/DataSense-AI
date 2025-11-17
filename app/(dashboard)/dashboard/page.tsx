@@ -23,7 +23,7 @@ async function getUserDatasets(userId: string) {
 }
 
 async function getStats(userId: string) {
-  const [datasetsCount, totalRows, visualizationsCount, dashboardsCount] = await Promise.all([
+  const [datasetsCount, totalRows, visualizationsCount, dashboardsCount, documentsCount] = await Promise.all([
     prisma.dataset.count({ where: { userId } }),
     prisma.dataset.aggregate({
       where: { userId },
@@ -34,7 +34,8 @@ async function getStats(userId: string) {
         dataset: { userId }
       }
     }),
-    prisma.dashboard.count({ where: { userId } })
+    prisma.dashboard.count({ where: { userId } }),
+    prisma.textDocument.count({ where: { userId } })
   ])
 
   return {
@@ -42,6 +43,7 @@ async function getStats(userId: string) {
     totalRows: totalRows._sum.rowCount || 0,
     visualizationsCount,
     dashboardsCount,
+    documentsCount,
   }
 }
 
@@ -86,7 +88,7 @@ export default async function DashboardPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Stats Cards */}
-        <div className="grid md:grid-cols-4 gap-6 mb-12">
+        <div className="grid md:grid-cols-5 gap-6 mb-12">
           <div className="bg-card rounded-lg border border-border p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -95,6 +97,20 @@ export default async function DashboardPage() {
               </div>
               <Database className="w-10 h-10 text-muted-foreground" />
             </div>
+          </div>
+
+          <div className="bg-card rounded-lg border border-border p-6">
+            <Link href="/documents">
+              <div className="flex items-center justify-between cursor-pointer group">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Documents</p>
+                  <p className="text-3xl font-bold text-foreground mt-1 group-hover:text-primary transition-colors">
+                    {stats.documentsCount}
+                  </p>
+                </div>
+                <FileText className="w-10 h-10 text-muted-foreground group-hover:text-primary transition-colors" />
+              </div>
+            </Link>
           </div>
 
           <div className="bg-card rounded-lg border border-border p-6">
@@ -131,7 +147,7 @@ export default async function DashboardPage() {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Upload New</p>
                   <p className="text-lg font-semibold text-primary mt-1 group-hover:underline">
-                    Add Dataset
+                    Add Data
                   </p>
                 </div>
                 <Upload className="w-10 h-10 text-primary" />
@@ -211,7 +227,12 @@ export default async function DashboardPage() {
             <ul className="space-y-2 text-sm">
               <li>
                 <Link href="/upload" className="text-primary hover:underline">
-                  → Upload a new dataset
+                  → Upload quantitative data (CSV/Excel)
+                </Link>
+              </li>
+              <li>
+                <Link href="/documents/upload" className="text-primary hover:underline">
+                  → Upload qualitative data (Text/PDF)
                 </Link>
               </li>
               <li>
@@ -224,20 +245,28 @@ export default async function DashboardPage() {
                   → Create custom dashboards
                 </Link>
               </li>
-              <li className="text-muted-foreground">
-                → Get data insights with AI
-              </li>
             </ul>
           </div>
 
           <div className="bg-secondary border border-border rounded-lg p-6">
             <h3 className="font-semibold text-foreground mb-3">📊 Supported Files</h3>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>• CSV files (.csv)</li>
-              <li>• Excel files (.xlsx, .xls)</li>
-              <li>• Maximum size: 10MB</li>
-              <li>• Up to 5,000 rows</li>
-            </ul>
+            <div className="space-y-3">
+              <div>
+                <p className="text-sm font-medium mb-1">Quantitative Data:</p>
+                <ul className="space-y-1 text-sm text-muted-foreground">
+                  <li>• CSV files (.csv)</li>
+                  <li>• Excel files (.xlsx, .xls)</li>
+                </ul>
+              </div>
+              <div>
+                <p className="text-sm font-medium mb-1">Qualitative Data (NEW):</p>
+                <ul className="space-y-1 text-sm text-muted-foreground">
+                  <li>• Text files (.txt)</li>
+                  <li>• Word documents (.docx)</li>
+                  <li>• PDF files (.pdf)</li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       </main>
