@@ -24,6 +24,7 @@ model User {
   datasets       Dataset[]
   dashboards     Dashboard[]
   textDocuments  TextDocument[]
+  correlations   CorrelationAnalysis[]
 
   @@map("users")
 }
@@ -150,6 +151,36 @@ model TextDocument {
 
   @@index([userId])
   @@map("text_documents")
+}
+
+// Correlation Analysis model for mixed-methods research
+model CorrelationAnalysis {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+
+  // Linked data sources
+  datasetId      String?   // Quantitative data
+  documentId     String?   // Qualitative data (optional - can correlate just datasets)
+
+  // Analysis results
+  correlations   Json?     // Array of correlation findings
+  insights       Json?     // AI-generated insights
+  narrative      String?   @db.Text // AI-generated narrative explanation
+
+  // Metadata
+  config         Json?     // Analysis configuration/parameters
+
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([datasetId])
+  @@index([documentId])
+  @@map("correlation_analyses")
 }
 
 // NextAuth v5 models

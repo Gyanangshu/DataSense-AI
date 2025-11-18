@@ -609,6 +609,19 @@ Return ONLY valid JSON with NO markdown formatting. Use this exact structure:
     }
   }
 
+  /**
+   * Generate plain text from a prompt (for narratives, summaries, etc.)
+   */
+  static async generateText(prompt: string, maxTokens: number = 500): Promise<string> {
+    try {
+      const text = await this.runTextGeneration(prompt, 'gemini-2.5-flash', 0.7, maxTokens)
+      return text.trim()
+    } catch (error) {
+      console.error('Text generation error:', error)
+      return ''
+    }
+  }
+
   static isConfigured(): boolean {
     return !!process.env.GEMINI_API_KEY
   }

@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme-toggle'
-import { Database, Upload, LogOut, FileText, Calendar, BarChart3, PieChart, LayoutDashboard } from 'lucide-react'
+import { Database, Upload, LogOut, FileText, Calendar, BarChart3, PieChart, LayoutDashboard, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 
 async function getUserDatasets(userId: string) {
@@ -23,7 +23,7 @@ async function getUserDatasets(userId: string) {
 }
 
 async function getStats(userId: string) {
-  const [datasetsCount, totalRows, visualizationsCount, dashboardsCount, documentsCount] = await Promise.all([
+  const [datasetsCount, totalRows, visualizationsCount, dashboardsCount, documentsCount, correlationsCount] = await Promise.all([
     prisma.dataset.count({ where: { userId } }),
     prisma.dataset.aggregate({
       where: { userId },
@@ -35,7 +35,8 @@ async function getStats(userId: string) {
       }
     }),
     prisma.dashboard.count({ where: { userId } }),
-    prisma.textDocument.count({ where: { userId } })
+    prisma.textDocument.count({ where: { userId } }),
+    prisma.correlationAnalysis.count({ where: { userId } })
   ])
 
   return {
@@ -44,6 +45,7 @@ async function getStats(userId: string) {
     visualizationsCount,
     dashboardsCount,
     documentsCount,
+    correlationsCount,
   }
 }
 
@@ -88,7 +90,7 @@ export default async function DashboardPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Stats Cards */}
-        <div className="grid md:grid-cols-5 gap-6 mb-12">
+        <div className="grid md:grid-cols-6 gap-6 mb-12">
           <div className="bg-card rounded-lg border border-border p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -137,6 +139,20 @@ export default async function DashboardPage() {
                   </p>
                 </div>
                 <LayoutDashboard className="w-10 h-10 text-muted-foreground group-hover:text-primary transition-colors" />
+              </div>
+            </Link>
+          </div>
+
+          <div className="bg-card rounded-lg border border-border p-6">
+            <Link href="/correlations">
+              <div className="flex items-center justify-between cursor-pointer group">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Correlations</p>
+                  <p className="text-3xl font-bold text-foreground mt-1 group-hover:text-primary transition-colors">
+                    {stats.correlationsCount}
+                  </p>
+                </div>
+                <Sparkles className="w-10 h-10 text-muted-foreground group-hover:text-primary transition-colors" />
               </div>
             </Link>
           </div>
@@ -243,6 +259,11 @@ export default async function DashboardPage() {
               <li>
                 <Link href="/dashboards" className="text-primary hover:underline">
                   → Create custom dashboards
+                </Link>
+              </li>
+              <li>
+                <Link href="/correlations/create" className="text-primary hover:underline">
+                  → Analyze correlations (Mixed-methods)
                 </Link>
               </li>
             </ul>
