@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { TrendingUp, TrendingDown, AlertCircle, Lightbulb, BarChart3, BookOpen } from 'lucide-react'
 import { Progress } from '@/components/ui/progress'
+import { MarkdownRenderer } from '@/lib/utils/markdown-renderer'
 
 interface Correlation {
   type: 'numeric' | 'thematic' | 'sentiment'
@@ -38,8 +39,18 @@ interface CorrelationAnalysisViewProps {
 }
 
 export default function CorrelationAnalysisView({ analysis }: CorrelationAnalysisViewProps) {
-  const correlations = (analysis.correlations as Correlation[]) || []
-  const insights = (analysis.insights as Insight[]) || []
+  // Convert numeric fields to numbers (they come from DB as strings/Decimal)
+  const correlations = ((analysis.correlations as any[]) || []).map(c => ({
+    ...c,
+    coefficient: c.coefficient !== undefined && c.coefficient !== null
+      ? (typeof c.coefficient === 'number' ? c.coefficient : parseFloat(c.coefficient))
+      : undefined
+  })) as Correlation[]
+
+  const insights = ((analysis.insights as any[]) || []).map(i => ({
+    ...i,
+    confidence: typeof i.confidence === 'number' ? i.confidence : parseFloat(i.confidence)
+  })) as Insight[]
 
   // Group correlations by type
   const numericCorrelations = correlations.filter(c => c.type === 'numeric')
@@ -129,9 +140,7 @@ export default function CorrelationAnalysisView({ analysis }: CorrelationAnalysi
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="prose prose-sm dark:prose-invert max-w-none">
-              <p className="text-foreground whitespace-pre-wrap">{analysis.narrative}</p>
-            </div>
+            <MarkdownRenderer content={analysis.narrative} />
           </CardContent>
         </Card>
       )}

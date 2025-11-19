@@ -15,6 +15,10 @@ model User {
   name          String?
   image         String?
   emailVerified DateTime?
+
+  // Week 5: Custom branding
+  brandingConfig Json?     // Default branding {logo, primaryColor, secondaryColor, companyName}
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -25,6 +29,8 @@ model User {
   dashboards     Dashboard[]
   textDocuments  TextDocument[]
   correlations   CorrelationAnalysis[]
+  templates      AnalysisTemplate[]
+  sharedAnalyses SharedAnalysis[]
 
   @@map("users")
 }
@@ -181,6 +187,86 @@ model CorrelationAnalysis {
   @@index([datasetId])
   @@index([documentId])
   @@map("correlation_analyses")
+}
+
+// Week 5: Analysis Templates
+model AnalysisTemplate {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  category      String   // 'industry' or 'methodology'
+  subcategory   String   // 'customer_feedback', 'employee_survey', 'grounded_theory', etc.
+
+  // Configuration
+  config        Json     // { expectedColumns, correlationTypes, insightCategories }
+  steps         Json     // Multi-step wizard configuration
+
+  // Metadata
+  userId        String?  // null = system template, otherwise user-created
+  user          User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isPublic      Boolean  @default(true)
+  usageCount    Int      @default(0)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([category])
+  @@index([userId])
+  @@map("analysis_templates")
+}
+
+// Week 5: Shared Analyses (for correlations and dashboards)
+model SharedAnalysis {
+  id              String    @id @default(cuid())
+  shareType       String    // 'correlation' or 'dashboard'
+  resourceId      String    // correlationId or dashboardId
+
+  // Access control
+  shareMode       String    // 'public' or 'private'
+  slug            String    @unique // URL-friendly identifier
+  password        String?   // Hashed password (bcrypt)
+  expiresAt       DateTime? // Optional expiration
+
+  // Custom branding
+  brandingConfig  Json?     // { logo: base64, primaryColor: '#hex', secondaryColor: '#hex', companyName: 'string' }
+
+  // Analytics aggregates
+  viewCount       Int       @default(0)
+  uniqueViewers   String[]  @default([]) // Array of IP hashes
+
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  views           ShareView[]
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([slug])
+  @@index([userId])
+  @@index([resourceId])
+  @@map("shared_analyses")
+}
+
+// Week 5: Share View Tracking (Analytics)
+model ShareView {
+  id                String    @id @default(cuid())
+  sharedAnalysisId  String
+  sharedAnalysis    SharedAnalysis @relation(fields: [sharedAnalysisId], references: [id], onDelete: Cascade)
+
+  // Analytics data
+  viewedAt          DateTime  @default(now())
+  ipHash            String    // SHA256 hashed IP (GDPR-compliant)
+  userAgent         String?
+  referrer          String?
+  deviceType        String?   // 'mobile', 'tablet', 'desktop'
+  country           String?
+  city              String?
+  timeSpent         Int?      // Seconds (tracked client-side, sent via beacon)
+
+  @@index([sharedAnalysisId])
+  @@index([viewedAt])
+  @@map("share_views")
 }
 
 // NextAuth v5 models

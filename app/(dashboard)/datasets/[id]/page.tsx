@@ -110,7 +110,7 @@ export default async function DatasetPage({
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className='my-4 flex justify-end'>
-          <Link href={`/datasets/${datasetId}/analyze`}>
+          <Link href={`/correlations/create?datasetId=${datasetId}`}>
             <Button>
               <Brain className="w-4 h-4 mr-2" />
               AI Analysis

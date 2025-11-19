@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Database, FileText, Loader2, Sparkles } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -37,11 +37,20 @@ interface CorrelationCreatorProps {
 
 export default function CorrelationCreator({ userId, datasets, documents }: CorrelationCreatorProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [selectedDataset, setSelectedDataset] = useState<string>('')
   const [selectedDocument, setSelectedDocument] = useState<string>('')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+
+  // Pre-select dataset from URL parameter
+  useEffect(() => {
+    const datasetId = searchParams.get('datasetId')
+    if (datasetId && datasets.some(d => d.id === datasetId)) {
+      setSelectedDataset(datasetId)
+    }
+  }, [searchParams, datasets])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

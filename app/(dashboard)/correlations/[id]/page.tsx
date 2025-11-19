@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme-toggle'
 import CorrelationAnalysisView from '@/components/correlations/CorrelationAnalysisView'
 import DeleteCorrelationButton from '@/components/correlations/DeleteCorrelationButton'
+import ShareButton from '@/components/share/ShareButton'
 
 async function getCorrelationAnalysis(id: string, userId: string) {
   const analysis = await prisma.correlationAnalysis.findFirst({
@@ -106,6 +107,13 @@ export default async function CorrelationAnalysisPage({
                   Home
                 </Button>
               </Link>
+              <ShareButton
+                shareType="correlation"
+                resourceId={analysis.id}
+                resourceName={analysis.name}
+                variant="outline"
+                size="sm"
+              />
               <DeleteCorrelationButton
                 correlationId={analysis.id}
                 correlationName={analysis.name}

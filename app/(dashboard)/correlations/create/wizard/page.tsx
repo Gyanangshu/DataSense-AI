@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { ArrowLeft, Home } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme-toggle'
-import CorrelationCreator from '@/components/correlations/CorrelationCreator'
+import WizardCorrelationCreator from '@/components/correlations/WizardCorrelationCreator'
 
 async function getUserData(userId: string) {
   const [datasets, documents] = await Promise.all([
@@ -17,6 +17,7 @@ async function getUserData(userId: string) {
         description: true,
         rowCount: true,
         columnCount: true,
+        columns: true,
         createdAt: true
       },
       orderBy: { createdAt: 'desc' }
@@ -38,10 +39,15 @@ async function getUserData(userId: string) {
   return { datasets, documents }
 }
 
-export default async function CreateCorrelationPage() {
+export default async function WizardPage({
+  searchParams
+}: {
+  searchParams: Promise<{ templateId?: string }>
+}) {
   const session = await auth()
   if (!session) redirect('/login')
 
+  const params = await searchParams
   const { datasets, documents } = await getUserData(session.user.id)
 
   return (
@@ -52,21 +58,21 @@ export default async function CreateCorrelationPage() {
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-4">
               <Link
-                href="/correlations"
+                href="/correlations/create/from-template"
                 className="p-2 hover:bg-accent rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5 text-muted-foreground" />
               </Link>
               <div>
                 <h1 className="text-xl font-bold text-foreground">
-                  Create Correlation Analysis
+                  Guided Analysis Wizard
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  Link qualitative and quantitative data to discover insights
+                  Follow the steps to create your correlation analysis
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <Link href="/dashboard">
                 <Button variant="outline" size="sm">
                   <Home className="w-4 h-4 mr-2" />
@@ -81,29 +87,11 @@ export default async function CreateCorrelationPage() {
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Template suggestion banner */}
-        <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-blue-900 dark:text-blue-100">
-                Want to save time? Try our pre-configured templates
-              </p>
-              <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                Choose from industry-specific or methodology-based templates
-              </p>
-            </div>
-            <Link href="/correlations/create/from-template">
-              <Button variant="outline" className="border-blue-300 dark:border-blue-700">
-                Browse Templates
-              </Button>
-            </Link>
-          </div>
-        </div>
-
-        <CorrelationCreator
+        <WizardCorrelationCreator
           userId={session.user.id}
           datasets={datasets}
           documents={documents}
+          templateId={params.templateId}
         />
       </main>
     </div>

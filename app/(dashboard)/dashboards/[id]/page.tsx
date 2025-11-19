@@ -2,11 +2,12 @@ import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
-import { ArrowLeft, Edit, Share2 } from 'lucide-react'
+import { ArrowLeft, Edit } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme-toggle'
 import DashboardViewer from '@/components/dashboard/DashboardViewer'
 import ExportDashboardButton from '@/components/dashboard/ExportDashboardButton'
+import ShareButton from '@/components/share/ShareButton'
 
 async function getDashboard(id: string, userId: string) {
   return await prisma.dashboard.findFirst({
@@ -75,10 +76,13 @@ export default async function DashboardViewPage({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" disabled>
-                <Share2 className="w-4 h-4 mr-2" />
-                Share
-              </Button>
+              <ShareButton
+                shareType="dashboard"
+                resourceId={dashboard.id}
+                resourceName={dashboard.name}
+                variant="outline"
+                size="sm"
+              />
               <ExportDashboardButton
                 dashboardId={dashboard.id}
                 dashboardName={dashboard.name}
